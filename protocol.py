@@ -12,46 +12,33 @@ class Layer4Segment:
     Responsible for port-based delivery, error detection (checksum), and segmentation logic.
     """
     def __init__(self, src_port, dst_port, segment_type, seq_num, data=""):
-        self.src_port = src_port      # 2 bytes
-        self.dst_port = dst_port      # 2 bytes
-        self.type = segment_type      # 1 byte (0 = DATA, 1 = ACK)
-        self.seq_num = seq_num        # 1 byte (0 or 1)
-        self.data = data              # variable length application message (empty for ACK)
+        self.src_port = src_port
+        self.dst_port = dst_port
+        self.type = segment_type
+        self.seq_num = seq_num
+        ## changed line below to normalise once 
+        self.data = data if isinstance(data, str) else data.decode('utf-8')
         
-        # Calculate Length: 10 bytes of header + length of encoded data
-        self.length = 10 + len(str(self.data).encode('utf-8')) # 2 bytes
-        
-        # 2 bytes for checksum, initialized to 0 before computation
-        self.checksum = 0             
-        
-        # Automatically compute the checksum upon creation if it is a DATA segment
+        self.length = 10 + len(self.data.encode('utf-8'))
+        self.checksum = 0
         if self.type == L4_TYPE_DATA:
             self.checksum = self.compute_checksum()
 
     def compute_checksum(self):
-        """
-        Computes a simple deterministic checksum for the segment.
-        Combines header fields and data, creating an MD5 hash, 
-        and returning an integer representation truncated to fit logical bounds.
-        """
         segment_content = f"{self.src_port}{self.dst_port}{self.length}{self.type}{self.seq_num}{self.data}"
         hash_object = hashlib.md5(segment_content.encode('utf-8'))
         # Return a simple integer hash representing a 2-byte checksum
         return int(hash_object.hexdigest(), 16) % 65536 
 
     def verify_checksum(self):
-        """
-        Verifies if the stored checksum matches the currently computed checksum.
-        Returns True if valid, False if corrupted.
-        """
+        if self.type == L4_TYPE_ACK:
+            return True  # no checksum need ed
         return self.checksum == self.compute_checksum()
 
     def is_ack(self):
-        """Helper to quickly identify ACK segments."""
         return self.type == L4_TYPE_ACK
 
     def __str__(self):
-        """String representation required for the output logs."""
         type_str = "DATA" if self.type == L4_TYPE_DATA else "ACK"
         return f"({type_str}, seq={self.seq_num})"
 
