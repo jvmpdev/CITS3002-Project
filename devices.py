@@ -16,13 +16,29 @@ class Host:
     # LAYER 4 - TRANSPORT & APPLICATION (STUDENT 1 / YOU)
     # ========================================================
     
-    def send_message(self, message_string, dest_ip, dest_port=80):
+def send_message(self, message_string, dest_ip, dest_port=80):
         """
         Takes raw application string, segments it if > 500 bytes,
         creates Layer4Segments, and starts the rdt2.2 send loop.
-        Calls self.send_to_layer3() for each segment.
         """
-        pass 
+        MAX_PAYLOAD_SIZE = 500
+        
+        # Log the receipt from the Application Layer
+        print(f"Host {self.ip[-2:]}: Layer 4: Data received from Application Layer. Data size = {len(message_string)}")
+
+        # 1. Segment the data
+        # We slice the string into chunks of up to 500 characters
+        segments_data = []
+        for i in range(0, len(message_string), MAX_PAYLOAD_SIZE):
+            chunk = message_string[i:i + MAX_PAYLOAD_SIZE]
+            segments_data.append(chunk)
+            
+        # 2. rdt2.2 Send Loop (Next Step)
+        for chunk in segments_data:
+            # Step 2a: Create the Layer4Segment for this chunk
+            # Step 2b: Send it down to Layer 3
+            # Step 2c: Wait for the correct ACK before moving to the next chunk
+            pass
 
     def receive_from_layer3(self, segment, src_ip):
         """
