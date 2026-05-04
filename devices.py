@@ -7,10 +7,26 @@ class Host:
         self.mac = mac_address
         self.routing_table = routing_table
         self.arp_table = arp_table
+        self.mac_table = {}
+        self.link = None
         
         # L4 State Variables (STUDENT 1 / YOU)
         self.seq_num = 0  # For rdt2.2 alternating bit protocol
         self.waiting_for_ack = False
+    
+    def _route(self, dst_ip: str):
+        dst_int = self._ip_to_int(dst_ip)
+        for (network, prefix_len, next_hop, interface) in self.routing_table:
+            mask    = (0xFFFFFFFF << (32 - prefix_len)) & 0xFFFFFFFF
+            net_int = self._ip_to_int(network)
+            if (dst_int & mask) == (net_int & mask):
+                resolved = dst_ip if next_hop is None else next_hop
+                return resolved, interface
+        raise Exception(f"{self.ip}: Layer 3: No route to {dst_ip}")
+    
+    def _ip_to_int(self, ip: str) -> int:
+        parts = [int(x) for x in ip.split(".")]
+        return (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]
 
     # ========================================================
     # LAYER 4 - TRANSPORT & APPLICATION (Damien)
@@ -115,65 +131,128 @@ class Host:
     # ========================================================
 
     def receive_from_layer4(self, segment, dest_ip):
-        """
-        Encapsulates segment into Layer3Packet.
-        Performs routing table lookup to find next-hop IP.
-        Calls self.send_to_layer2().
-        """
-        pass
+        src_ip = self.ip
+        print(f"{self.ip}: Layer 3: Segment received from Transport Layer: "
+            f"SRC_IP={src_ip}, DST_IP={dest_ip}, TTL={DEFAULT_TTL}")
+
+        packet = Layer3Packet(src_ip, dest_ip, DEFAULT_TTL, segment)
+
+        print(f"{self.ip}: Layer 3: Destination IP read: {dest_ip}")
+        print(f"{self.ip}: Layer 3: Routing table lookup performed")
+
+        next_hop, interface = self._route(dest_ip)
+
+        print(f"{self.ip}: Layer 3: Next-hop IP determined: {next_hop}")
+        print(f"{self.ip}: Layer 3: Outgoing interface selected")
+        print(f"{self.ip}: Layer 3: Packet forwarded to Data Link Layer")
+
+        self.send_to_layer2(packet, next_hop)
+
 
     def receive_from_layer2(self, packet):
-        """
-        Checks if packet destination IP matches host IP.
-        If yes, decapsulates and passes to self.receive_from_layer3().
-        """
-        pass
+        print(f"{self.ip}: Layer 3: Packet received from Data Link Layer: "
+            f"SRC_IP={packet.src_ip}, DST_IP={packet.dst_ip}, TTL={packet.ttl}")
+        print(f"{self.ip}: Layer 3: Destination IP read: {packet.dst_ip}")
+
+        if packet.dst_ip == self.ip:
+            print(f"{self.ip}: Layer 3: Segment delivered to Transport Layer")
+            self.receive_from_layer3(packet.payload, packet.src_ip)
 
     def send_to_layer2(self, packet, next_hop_ip):
-        """
-        Looks up MAC address for next_hop_ip in ARP table.
-        Encapsulates packet into Layer2Frame.
-        Simulates sending over the wire.
-        """
-        pass
+        dst_mac = self.arp_table.get(next_hop_ip)
+        if dst_mac is None:
+            raise Exception(f"{self.ip}: Layer 2: No ARP entry for {next_hop_ip}")
+
+        print(f"{self.ip}: Layer 2: Packet received from Network Layer")
+        print(f"{self.ip}: Layer 2: Destination MAC lookup for next-hop IP ({next_hop_ip}) → {dst_mac}")
+
+        frame = Layer2Frame(self.mac, dst_mac, packet)
+        print(f"{self.ip}: Layer 2: Frame created: SRC_MAC={self.mac}, DST_MAC={dst_mac}")
+        print(f"{self.ip}: Layer 2: Frame sent")
+
+        self.link.receive_frame(frame, "iface1")
 
     def receive_frame(self, frame):
-        """
-        Physical entry point. Learns Source MAC.
-        If Dest MAC matches host MAC, passes payload to self.receive_from_layer2().
-        """
-        pass
+        interface = "eth0"
+        print(f"{self.ip}: Layer 2: Frame received on {interface}")
+        if frame.src_mac not in self.mac_table:
+            self.mac_table[frame.src_mac] = interface
+            print(f"{self.ip}: Layer 2: Source MAC learned: {frame.src_mac} on {interface}")
+
+        if frame.dst_mac == self.mac:
+            print(f"{self.ip}: Layer 2: Packet delivered to Network Layer")
+            self.receive_from_layer2(frame.payload)
+        else:
+            print(f"{self.ip}: Layer 2: Frame not for this host — dropping")
 
 
 class Router:
-    """
-    STUDENT 2 / PARTNER ONLY
-    Routers do not implement Layer 4, so this class is entirely Partner territory.
-    """
     def __init__(self, interfaces_config, routing_table):
-        self.interfaces = interfaces_config
+        self.interfaces    = interfaces_config 
         self.routing_table = routing_table
+        self.mac_tables    = {iface: {} for iface in interfaces_config} 
 
     def receive_frame(self, frame, interface_in):
-        """
-        Learns Source MAC on incoming interface.
-        If frame is for this router, pass to self.process_packet().
-        """
-        pass
+        print(f"Router R1: Layer 2: Frame received on {interface_in}")
+        src_mac = frame.src_mac
+        if src_mac not in self.mac_tables[interface_in]:
+            self.mac_tables[interface_in][src_mac] = interface_in
+            print(f"Router R1: Layer 2: Source MAC learned: {src_mac} on {interface_in}")
+
+        my_mac = self.interfaces[interface_in]["mac"]
+        if frame.dst_mac == my_mac:
+            print(f"Router R1: Layer 2: Packet delivered to Network Layer")
+            self.process_packet(frame.payload)
+        else:
+            print(f"Router R1: Layer 2: Frame not for this router — dropping")
 
     def process_packet(self, packet):
-        """
-        Layer 3 logic. Decrements TTL. Drops if TTL <= 0.
-        Reads Dest IP, does routing table lookup.
-        Determines outgoing interface and next-hop IP.
-        Passes to self.forward_frame().
-        """
-        pass
+        print(f"Router R1: Layer 3: Packet received from Data Link Layer: "
+              f"SRC_IP={packet.src_ip}, DST_IP={packet.dst_ip}, TTL={packet.ttl}")
+        print(f"Router R1: Layer 3: Destination IP read: {packet.dst_ip}")
+
+        old_ttl = packet.ttl
+        packet.decrement_ttl()
+        print(f"Router R1: Layer 3: TTL decremented: {old_ttl} → {packet.ttl}")
+
+        if packet.is_expired():
+            print(f"Router R1: Layer 3: TTL expired — packet dropped")
+            return
+
+        print(f"Router R1: Layer 3: Routing table lookup performed")
+        next_hop, interface_out = self._route(packet.dst_ip)
+        print(f"Router R1: Layer 3: Next-hop IP determined: {next_hop}")
+        print(f"Router R1: Layer 3: Outgoing interface selected ({interface_out})")
+
+        self.forward_frame(packet, interface_out, next_hop)
 
     def forward_frame(self, packet, interface_out, next_hop_ip):
-        """
-        Looks up MAC for next_hop_ip. 
-        Creates new Layer2Frame with router's interface MAC as source.
-        Simulates forwarding to next device.
-        """
-        pass
+        iface     = self.interfaces[interface_out]
+        src_mac   = iface["mac"]
+        dst_mac   = iface["arp_table"].get(next_hop_ip)
+        if dst_mac is None:
+            raise Exception(f"Router R1: Layer 2: No ARP entry for {next_hop_ip}")
+
+        print(f"Router R1: Layer 3: Packet forwarded to Data Link Layer")
+        print(f"Router R1: Layer 2: Packet received from Network Layer")
+        print(f"Router R1: Layer 2: Destination MAC lookup for next-hop IP ({next_hop_ip}) → {dst_mac}")
+
+        frame = Layer2Frame(src_mac, dst_mac, packet)
+        print(f"Router R1: Layer 2: Frame created: SRC_MAC={src_mac}, DST_MAC={dst_mac}")
+        print(f"Router R1: Layer 2: Frame sent")
+
+        iface["link"].receive_frame(frame, "eth0")
+
+    def _route(self, dst_ip: str):
+        dst_int = self._ip_to_int(dst_ip)
+        for (network, prefix_len, next_hop, interface) in self.routing_table:
+            mask    = (0xFFFFFFFF << (32 - prefix_len)) & 0xFFFFFFFF
+            net_int = self._ip_to_int(network)
+            if (dst_int & mask) == (net_int & mask):
+                resolved = dst_ip if next_hop is None else next_hop
+                return resolved, interface
+        raise Exception(f"Router R1: Layer 3: No route to {dst_ip}")
+
+    def _ip_to_int(self, ip: str) -> int:
+        parts = [int(x) for x in ip.split(".")]
+        return (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]
