@@ -13,7 +13,7 @@ class Host:
         self.waiting_for_ack = False
 
     # ========================================================
-    # LAYER 4 - TRANSPORT & APPLICATION (STUDENT 1 / YOU)
+    # LAYER 4 - TRANSPORT & APPLICATION (Damien)
     # ========================================================
     
     def send_message(self, message_string, dest_ip, dest_port=80):
@@ -31,10 +31,6 @@ class Host:
         for i in range(0, len(message_string), MAX_PAYLOAD_SIZE):
             chunk = message_string[i:i + MAX_PAYLOAD_SIZE]
             segments_data.append(chunk)
-            
-        # Temporary print statement to test the chunking
-        for index, chunk in enumerate(segments_data):
-            print(f"DEBUG - Created chunk {index + 1} of size: {len(chunk)}")
             
         # 2. rdt2.2 Send Loop
         for chunk in segments_data:
@@ -106,7 +102,7 @@ class Host:
             
             # Send it down to Layer 3 to travel back to the sender
             self.send_to_layer3(ack_segment, src_ip)
-            
+
     def send_to_layer3(self, segment, dest_ip):
         """
         Helper to pass L4 segment down to Partner's L3.
@@ -115,7 +111,7 @@ class Host:
         self.receive_from_layer4(segment, dest_ip)
 
     # ========================================================
-    # LAYER 3 & LAYER 2 - NETWORK & LINK (STUDENT 2 / PARTNER)
+    # LAYER 3 & LAYER 2 - NETWORK & LINK (Jules)
     # ========================================================
 
     def receive_from_layer4(self, segment, dest_ip):
