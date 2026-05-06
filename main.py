@@ -28,29 +28,27 @@ def main():
     print(f"--- Starting Simulation: {message_size}-byte payload from Host A to Host B ---")
 
     # 2. Network Instantiation
-    # Setting up the devices using the exact IP, MAC, and Routing tables from config.py[cite: 1].
-    host_a = Host(
-        ip_address=HOST_A_IP, 
-        mac_address=HOST_A_MAC, 
-        routing_table=ROUTING_TABLE_HOST_A, 
-        arp_table=ARP_TABLE_HOST_A
-    )
+    host_a = Host("Host A", HOST_A_IP, HOST_A_MAC, ROUTING_TABLE_HOST_A, ARP_TABLE_HOST_A)
+    host_b = Host("Host B", HOST_B_IP, HOST_B_MAC, ROUTING_TABLE_HOST_B, ARP_TABLE_HOST_B)
     
-    host_b = Host(
-        ip_address=HOST_B_IP, 
-        mac_address=HOST_B_MAC, 
-        routing_table=ROUTING_TABLE_HOST_B, 
-        arp_table=ARP_TABLE_HOST_B
-    )
-    
-    # Router R1 has two interfaces connecting the two subnets[cite: 1].
+    # Instantiate the router with the formatted names
     router_r1 = Router(
         interfaces_config={
-            "iface1": {"ip": ROUTER_R1_IFACE1_IP, "mac": ROUTER_R1_IFACE1_MAC, "arp": ARP_TABLE_R1_IFACE1},
-            "iface2": {"ip": ROUTER_R1_IFACE2_IP, "mac": ROUTER_R1_IFACE2_MAC, "arp": ARP_TABLE_R1_IFACE2}
+            "Interface 1": {"ip": ROUTER_R1_IFACE1_IP, "mac": ROUTER_R1_IFACE1_MAC, "arp_table": ARP_TABLE_R1_IFACE1},
+            "Interface 2": {"ip": ROUTER_R1_IFACE2_IP, "mac": ROUTER_R1_IFACE2_MAC, "arp_table": ARP_TABLE_R1_IFACE2}
         },
         routing_table=ROUTING_TABLE_R1
     )
+
+    # 3. The "Wire" 
+    host_a.link = router_r1
+    host_a.connected_interface = "Interface 1"  
+
+    host_b.link = router_r1
+    host_b.connected_interface = "Interface 2"
+
+    router_r1.interfaces["Interface 1"]["link"] = host_a
+    router_r1.interfaces["Interface 2"]["link"] = host_b
 
     # 3. The "Wire" (Mocking the physical layer)
     # Since external networking libraries like `socket` are not allowed[cite: 1], 
@@ -58,16 +56,16 @@ def main():
     
     # Host A is physically plugged into Router R1 Interface 1
     host_a.connected_device = router_r1
-    host_a.connected_interface = "iface1"  
+    host_a.connected_interface = "Interface 1"  
 
     # Host B is physically plugged into Router R1 Interface 2
     host_b.connected_device = router_r1
-    host_b.connected_interface = "iface2"
+    host_b.connected_interface = "Interface 2"
 
     # Router R1 knows which host is plugged into which interface
     router_r1.connected_devices = {
-        "iface1": host_a,
-        "iface2": host_b
+        "Interface 1": host_a,
+        "Interface 2": host_b
     }
 
     # 4. The Trigger

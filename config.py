@@ -41,8 +41,8 @@ ROUTING_TABLE_HOST_B = [
 ]
 
 ROUTING_TABLE_R1 = [
-    ("10.0.1.0", 24, None,    "iface1"),  # directly connected
-    ("10.0.2.0", 24, None,    "iface2"),  # directly connected
+    ("10.0.1.0", 24, None,    "Interface 1"),  # directly connected
+    ("10.0.2.0", 24, None,    "Interface 2"),  # directly connected
 ]
 
 ARP_TABLE_HOST_A = {

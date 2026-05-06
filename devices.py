@@ -2,7 +2,8 @@ from protocol import Layer2Frame, Layer3Packet, Layer4Segment
 from config import *
 
 class Host:
-    def __init__(self, ip_address, mac_address, routing_table, arp_table):
+    def __init__(self, name, ip_address, mac_address, routing_table, arp_table):
+        self.name = name  # Store the name (e.g., "Host A")
         self.ip = ip_address
         self.mac = mac_address
         self.routing_table = routing_table
@@ -10,8 +11,8 @@ class Host:
         self.mac_table = {}
         self.link = None
         
-        # L4 State Variables (STUDENT 1 / YOU)
-        self.seq_num = 0  # For rdt2.2 alternating bit protocol
+        # L4 State Variables
+        self.seq_num = 0 
         self.waiting_for_ack = False
     
     def _route(self, dst_ip: str):
@@ -22,7 +23,7 @@ class Host:
             if (dst_int & mask) == (net_int & mask):
                 resolved = dst_ip if next_hop is None else next_hop
                 return resolved, interface
-        raise Exception(f"{self.ip}: Layer 3: No route to {dst_ip}")
+        raise Exception(f"{self.name}: Layer 3: No route to {dst_ip}")
     
     def _ip_to_int(self, ip: str) -> int:
         parts = [int(x) for x in ip.split(".")]
@@ -40,7 +41,7 @@ class Host:
         MAX_PAYLOAD_SIZE = 500
         
         # Log the receipt from the Application Layer
-        print(f"Host {self.ip[-2:]}: Layer 4: Data received from Application Layer. Data size = {len(message_string)}")
+        print(f"{self.name}: Layer 4: Data received from Application Layer. Data size = {len(message_string)}")
 
         # 1. Segment the data
         segments_data = []
@@ -50,24 +51,18 @@ class Host:
             
         # 2. rdt2.2 Send Loop
         for chunk in segments_data:
-            print(f"Host {self.ip[-2:]}: Layer 4: Checksum computed")
+            print(f"{self.name}: Layer 4: Checksum computed")
             
             # Step 2a: Create the Layer4Segment (segment_type 0 = DATA)
             segment = Layer4Segment(src_port=5000, dst_port=dest_port, segment_type=0, seq_num=self.seq_num, data=chunk)
             
-            print(f"Host {self.ip[-2:]}: Layer 4: Segment created by adding transport layer header (DATA, seq={self.seq_num}) (encapsulation)")
+            print(f"{self.name}: Layer 4: Segment created by adding transport layer header (DATA, seq={self.seq_num}) (encapsulation)")
             
             # Step 2b: Send and wait for ACK
             self.waiting_for_ack = True
             while self.waiting_for_ack:
-                print(f"Host {self.ip[-2:]}: Layer 4: Segment sent to Network Layer")
+                print(f"{self.name}: Layer 4: Segment sent to Network Layer")
                 self.send_to_layer3(segment, dest_ip)
-                
-                # --- SAFETY BREAK FOR INDEPENDENT TESTING ---
-                # Remove these two lines once your partner finishes Layer 3!
-                print(f"DEBUG: Simulating successful ACK receipt to prevent infinite loop.")
-                self.waiting_for_ack = False 
-                # --------------------------------------------
                 
             # Step 2c: Flip the alternating bit (0 becomes 1, 1 becomes 0)
             self.seq_num = 1 - self.seq_num
@@ -77,11 +72,11 @@ class Host:
         Receives Layer4Segment from L3. 
         Verifies checksum. Handles ACKs (if sender) or DATA (if receiver).
         """
-        print(f"Host {self.ip[-2:]}: Layer 4: Segment received from Network Layer")
+        print(f"{self.name}: Layer 4: Segment received from Network Layer")
         
         # 1. Verify Checksum[cite: 1]
         if not segment.verify_checksum():
-            print(f"Host {self.ip[-2:]}: Layer 4: Segment discarded due to checksum error")
+            print(f"{self.name}: Layer 4: Segment discarded due to checksum error")
             # In rdt2.2, if receiver gets corrupt DATA, they resend the previous ACK[cite: 1].
             # If sender gets corrupt ACK, they do nothing, and the loop will retransmit[cite: 1].
             if segment.type == 0: 
@@ -91,20 +86,20 @@ class Host:
                 self.send_to_layer3(ack_segment, src_ip)
             return
             
-        print(f"Host {self.ip[-2:]}: Layer 4: Checksum verified")
+        print(f"{self.name}: Layer 4: Checksum verified")
 
         # 2. Handle incoming ACK (Sender Side)[cite: 1]
         if segment.type == 1: 
-            print(f"Host {self.ip[-2:]}: Layer 4: ACK received: seq={segment.seq_num}")
+            print(f"{self.name}: Layer 4: ACK received: seq={segment.seq_num}")
             if segment.seq_num == self.seq_num:
                 self.waiting_for_ack = False # Breaks the while loop!
             else:
-                print(f"Host {self.ip[-2:]}: Layer 4: Incorrect ACK received, retransmitting...")
+                print(f"{self.name}: Layer 4: Incorrect ACK received, retransmitting...")
                 
         # 3. Handle incoming DATA (Receiver Side)[cite: 1]
         elif segment.type == 0: 
             if segment.seq_num == self.seq_num:
-                print(f"Host {self.ip[-2:]}: Layer 4: DATA segment delivered to Application Layer. Data size = {len(segment.data)}")
+                print(f"{self.name}: Layer 4: DATA segment delivered to Application Layer. Data size = {len(segment.data)}")
                 # Advance receiver's expected sequence number
                 self.seq_num = 1 - self.seq_num 
             else:
@@ -113,8 +108,8 @@ class Host:
 
             # Always send an ACK for the sequence number we just received
             ack_segment = Layer4Segment(src_port=80, dst_port=5000, segment_type=1, seq_num=segment.seq_num)
-            print(f"Host {self.ip[-2:]}: Layer 4: Segment created by adding transport layer header (ACK, seq={segment.seq_num})")
-            print(f"Host {self.ip[-2:]}: Layer 4: Segment sent to Network Layer")
+            print(f"{self.name}: Layer 4: Segment created by adding transport layer header (ACK, seq={segment.seq_num})")
+            print(f"{self.name}: Layer 4: Segment sent to Network Layer")
             
             # Send it down to Layer 3 to travel back to the sender
             self.send_to_layer3(ack_segment, src_ip)
@@ -132,58 +127,59 @@ class Host:
 
     def receive_from_layer4(self, segment, dest_ip):
         src_ip = self.ip
-        print(f"{self.ip}: Layer 3: Segment received from Transport Layer: "
+        print(f"{self.name}: Layer 3: Segment received from Transport Layer: "
             f"SRC_IP={src_ip}, DST_IP={dest_ip}, TTL={DEFAULT_TTL}")
 
         packet = Layer3Packet(src_ip, dest_ip, DEFAULT_TTL, segment)
 
-        print(f"{self.ip}: Layer 3: Destination IP read: {dest_ip}")
-        print(f"{self.ip}: Layer 3: Routing table lookup performed")
+        print(f"{self.name}: Layer 3: Destination IP read: {dest_ip}")
+        print(f"{self.name}: Layer 3: Routing table lookup performed")
 
         next_hop, interface = self._route(dest_ip)
 
-        print(f"{self.ip}: Layer 3: Next-hop IP determined: {next_hop}")
-        print(f"{self.ip}: Layer 3: Outgoing interface selected")
-        print(f"{self.ip}: Layer 3: Packet forwarded to Data Link Layer")
+        print(f"{self.name}: Layer 3: Next-hop IP determined: {next_hop}")
+        print(f"{self.name}: Layer 3: Outgoing interface selected")
+        print(f"{self.name}: Layer 3: Packet forwarded to Data Link Layer")
 
         self.send_to_layer2(packet, next_hop)
 
 
     def receive_from_layer2(self, packet):
-        print(f"{self.ip}: Layer 3: Packet received from Data Link Layer: "
+        print(f"{self.name}: Layer 3: Packet received from Data Link Layer: "
             f"SRC_IP={packet.src_ip}, DST_IP={packet.dst_ip}, TTL={packet.ttl}")
-        print(f"{self.ip}: Layer 3: Destination IP read: {packet.dst_ip}")
+        print(f"{self.name}: Layer 3: Destination IP read: {packet.dst_ip}")
 
         if packet.dst_ip == self.ip:
-            print(f"{self.ip}: Layer 3: Segment delivered to Transport Layer")
+            print(f"{self.name}: Layer 3: Packet identified as local delivery")
+            print(f"{self.name}: Layer 3: Segment delivered to Transport Layer")
             self.receive_from_layer3(packet.payload, packet.src_ip)
 
     def send_to_layer2(self, packet, next_hop_ip):
         dst_mac = self.arp_table.get(next_hop_ip)
         if dst_mac is None:
-            raise Exception(f"{self.ip}: Layer 2: No ARP entry for {next_hop_ip}")
+            raise Exception(f"{self.name}: Layer 2: No ARP entry for {next_hop_ip}")
 
-        print(f"{self.ip}: Layer 2: Packet received from Network Layer")
-        print(f"{self.ip}: Layer 2: Destination MAC lookup for next-hop IP ({next_hop_ip}) → {dst_mac}")
+        print(f"{self.name}: Layer 2: Packet received from Network Layer")
+        print(f"{self.name}: Layer 2: Destination MAC lookup for next-hop IP ({next_hop_ip}) → {dst_mac}")
 
         frame = Layer2Frame(self.mac, dst_mac, packet)
-        print(f"{self.ip}: Layer 2: Frame created: SRC_MAC={self.mac}, DST_MAC={dst_mac}")
-        print(f"{self.ip}: Layer 2: Frame sent")
+        print(f"{self.name}: Layer 2: Frame created: SRC_MAC={self.mac}, DST_MAC={dst_mac}")
+        print(f"{self.name}: Layer 2: Frame sent")
 
-        self.link.receive_frame(frame, "iface1")
+        self.link.receive_frame(frame, self.connected_interface)
 
     def receive_frame(self, frame):
         interface = "eth0"
-        print(f"{self.ip}: Layer 2: Frame received on {interface}")
+        print(f"{self.name}: Layer 2: Frame received")
         if frame.src_mac not in self.mac_table:
             self.mac_table[frame.src_mac] = interface
-            print(f"{self.ip}: Layer 2: Source MAC learned: {frame.src_mac} on {interface}")
+            print(f"{self.name}: Layer 2: Source MAC learned: {frame.src_mac}")
 
         if frame.dst_mac == self.mac:
-            print(f"{self.ip}: Layer 2: Packet delivered to Network Layer")
+            print(f"{self.name}: Layer 2: Packet delivered to Network Layer")
             self.receive_from_layer2(frame.payload)
         else:
-            print(f"{self.ip}: Layer 2: Frame not for this host — dropping")
+            print(f"{self.name}: Layer 2: Frame not for this host — dropping")
 
 
 class Router:
@@ -241,7 +237,7 @@ class Router:
         print(f"Router R1: Layer 2: Frame created: SRC_MAC={src_mac}, DST_MAC={dst_mac}")
         print(f"Router R1: Layer 2: Frame sent")
 
-        iface["link"].receive_frame(frame, "eth0")
+        iface["link"].receive_frame(frame)
 
     def _route(self, dst_ip: str):
         dst_int = self._ip_to_int(dst_ip)
