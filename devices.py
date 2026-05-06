@@ -41,7 +41,7 @@ class Host:
         MAX_PAYLOAD_SIZE = 500
         
         # Log the receipt from the Application Layer
-        print(f"{self.name}: Layer 4: Data received from Application Layer. Data size = {len(message_string)}")
+        print(f"{self.name}: Layer 4: Data received from Application Layer. Data size={len(message_string)}")
 
         # 1. Segment the data
         segments_data = []
@@ -99,7 +99,7 @@ class Host:
         # 3. Handle incoming DATA (Receiver Side)[cite: 1]
         elif segment.type == 0: 
             if segment.seq_num == self.seq_num:
-                print(f"{self.name}: Layer 4: DATA segment delivered to Application Layer. Data size = {len(segment.data)}")
+                print(f"{self.name}: Layer 4: DATA segment delivered to Application Layer. Data size={len(segment.data)}")
                 # Advance receiver's expected sequence number
                 self.seq_num = 1 - self.seq_num 
             else:
@@ -235,7 +235,7 @@ class Router:
 
         frame = Layer2Frame(src_mac, dst_mac, packet)
         print(f"Router R1: Layer 2: Frame created: SRC_MAC={src_mac}, DST_MAC={dst_mac}")
-        print(f"Router R1: Layer 2: Frame sent")
+        print(f"Router R1: Layer 2: Frame forwarded on {interface_out}")
 
         iface["link"].receive_frame(frame)
 

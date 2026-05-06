@@ -50,24 +50,6 @@ def main():
     router_r1.interfaces["Interface 1"]["link"] = host_a
     router_r1.interfaces["Interface 2"]["link"] = host_b
 
-    # 3. The "Wire" (Mocking the physical layer)
-    # Since external networking libraries like `socket` are not allowed[cite: 1], 
-    # we inject references so the devices can directly pass `Layer2Frame` objects to each other.
-    
-    # Host A is physically plugged into Router R1 Interface 1
-    host_a.connected_device = router_r1
-    host_a.connected_interface = "Interface 1"  
-
-    # Host B is physically plugged into Router R1 Interface 2
-    host_b.connected_device = router_r1
-    host_b.connected_interface = "Interface 2"
-
-    # Router R1 knows which host is plugged into which interface
-    router_r1.connected_devices = {
-        "Interface 1": host_a,
-        "Interface 2": host_b
-    }
-
     # 4. The Trigger
     dummy_message = create_dummy_message(message_size)
     host_a.send_message(dummy_message, dest_ip=HOST_B_IP)
