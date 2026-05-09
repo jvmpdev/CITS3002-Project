@@ -32,7 +32,7 @@ class Layer4Segment:
 
     def verify_checksum(self):
         if self.type == L4_TYPE_ACK:
-            return True  # no checksum need ed
+            return True  # ACKs do not require a checksum in this simplified protocol
         return self.checksum == self.compute_checksum()
 
     def is_ack(self):

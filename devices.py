@@ -74,11 +74,11 @@ class Host:
         """
         print(f"{self.name}: Layer 4: Segment received from Network Layer")
         
-        # 1. Verify Checksum[cite: 1]
+        # 1. Verify Checksum
         if not segment.verify_checksum():
             print(f"{self.name}: Layer 4: Segment discarded due to checksum error")
-            # In rdt2.2, if receiver gets corrupt DATA, they resend the previous ACK[cite: 1].
-            # If sender gets corrupt ACK, they do nothing, and the loop will retransmit[cite: 1].
+            # In rdt2.2, if receiver gets corrupt DATA, they resend the previous ACK
+            # If sender gets corrupt ACK, they do nothing, and the loop will retransmit
             if segment.type == 0: 
                 # Resend previous ACK
                 prev_ack_seq = 1 - self.seq_num
@@ -88,7 +88,7 @@ class Host:
             
         print(f"{self.name}: Layer 4: Checksum verified")
 
-        # 2. Handle incoming ACK (Sender Side)[cite: 1]
+        # 2. Handle incoming ACK (Sender Side)
         if segment.type == 1: 
             print(f"{self.name}: Layer 4: ACK received: seq={segment.seq_num}")
             if segment.seq_num == self.seq_num:
@@ -96,7 +96,7 @@ class Host:
             else:
                 print(f"{self.name}: Layer 4: Incorrect ACK received, retransmitting...")
                 
-        # 3. Handle incoming DATA (Receiver Side)[cite: 1]
+        # 3. Handle incoming DATA (Receiver Side)
         elif segment.type == 0: 
             if segment.seq_num == self.seq_num:
                 print(f"{self.name}: Layer 4: DATA segment delivered to Application Layer. Data size={len(segment.data)}")
