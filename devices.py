@@ -32,8 +32,8 @@ class Host:
     # LAYER 4 - TRANSPORT & APPLICATION (Damien)
     def send_message(self, message_string, dest_ip, dest_port=80):
         """
-        Takes raw application string, segments it if > 500 bytes,
-        creates Layer4Segments, and starts the rdt2.2 send loop.
+        takes raw application string, segments it if > 500 bytes,
+        creates Layer4Segments, and starts the rdt2.2 send loop
         """
         MAX_PAYLOAD_SIZE = 500
         
@@ -66,8 +66,8 @@ class Host:
 
     def receive_from_layer3(self, segment, src_ip):
         """
-        Receives Layer4Segment from L3. 
-        Verifies checksum. Handles ACKs (if sender) or DATA (if receiver).
+        receives Layer4Segment from L3
+        verifies checksum, handles ACKs (if sender) or DATA (if receiver)
         """
         print(f"{self.name}: Layer 4: Segment received from Network Layer")
         
@@ -112,10 +112,6 @@ class Host:
             self.send_to_layer3(ack_segment, src_ip)
 
     def send_to_layer3(self, segment, dest_ip):
-        """
-        Helper to pass L4 segment down to Partner's L3.
-        This bridges your Transport layer with your partner's Network layer.
-        """
         self.receive_from_layer4(segment, dest_ip)
 
     # LAYER 3 & LAYER 2 - NETWORK & LINK (Jules)

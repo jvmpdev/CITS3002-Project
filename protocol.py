@@ -61,15 +61,12 @@ class Layer3Packet:
         self.total_length = 12 + payload_len # 2 bytes
 
     def decrement_ttl(self):
-        """Decrements the Time-To-Live value."""
         self.ttl -= 1
         
     def is_expired(self):
-        """Checks if the packet should be dropped."""
         return self.ttl <= 0
 
     def __str__(self):
-        """String representation required for the output logs."""
         return f"SRC_IP={self.src_ip}, DST_IP={self.dst_ip}, TTL={self.ttl}"
 
 
@@ -85,5 +82,4 @@ class Layer2Frame:
         self.payload = payload # variable (Layer 3 Packet)
 
     def __str__(self):
-        """String representation required for the output logs."""
         return f"SRC_MAC={self.src_mac}, DST_MAC={self.dst_mac}"
