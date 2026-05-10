@@ -11,7 +11,7 @@ class Host:
         self.mac_table = {}
         self.link = None
         
-        # L4 State Variables
+        # layer 4 state variables
         self.seq_num = 0 
         self.waiting_for_ack = False
     
@@ -29,10 +29,7 @@ class Host:
         parts = [int(x) for x in ip.split(".")]
         return (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]
 
-    # ========================================================
     # LAYER 4 - TRANSPORT & APPLICATION (Damien)
-    # ========================================================
-    
     def send_message(self, message_string, dest_ip, dest_port=80):
         """
         Takes raw application string, segments it if > 500 bytes,
@@ -40,31 +37,31 @@ class Host:
         """
         MAX_PAYLOAD_SIZE = 500
         
-        # Log the receipt from the Application Layer
+        # log the receipt from the application layer
         print(f"{self.name}: Layer 4: Data received from Application Layer. Data size={len(message_string)}")
 
-        # 1. Segment the data
+        # segment the data
         segments_data = []
         for i in range(0, len(message_string), MAX_PAYLOAD_SIZE):
             chunk = message_string[i:i + MAX_PAYLOAD_SIZE]
             segments_data.append(chunk)
             
-        # 2. rdt2.2 Send Loop
+        # rdt2.2 send loop
         for chunk in segments_data:
             print(f"{self.name}: Layer 4: Checksum computed")
             
-            # Step 2a: Create the Layer4Segment (segment_type 0 = DATA)
+            # create the Layer4Segment (segment_type 0 = DATA)
             segment = Layer4Segment(src_port=5000, dst_port=dest_port, segment_type=0, seq_num=self.seq_num, data=chunk)
             
             print(f"{self.name}: Layer 4: Segment created by adding transport layer header (DATA, seq={self.seq_num}) (encapsulation)")
             
-            # Step 2b: Send and wait for ACK
+            # send and wait for ACK
             self.waiting_for_ack = True
             while self.waiting_for_ack:
                 print(f"{self.name}: Layer 4: Segment sent to Network Layer")
                 self.send_to_layer3(segment, dest_ip)
                 
-            # Step 2c: Flip the alternating bit (0 becomes 1, 1 becomes 0)
+            # flip the alternating bit
             self.seq_num = 1 - self.seq_num
 
     def receive_from_layer3(self, segment, src_ip):
@@ -74,13 +71,13 @@ class Host:
         """
         print(f"{self.name}: Layer 4: Segment received from Network Layer")
         
-        # 1. Verify Checksum
+        # verify checksum
         if not segment.verify_checksum():
             print(f"{self.name}: Layer 4: Segment discarded due to checksum error")
-            # In rdt2.2, if receiver gets corrupt DATA, they resend the previous ACK
-            # If sender gets corrupt ACK, they do nothing, and the loop will retransmit
+            # in rdt2.2, if receiver gets corrupt DATA, they resend the previous ACK
+            # if sender gets corrupt ACK, they do nothing, and the loop will retransmit
             if segment.type == 0: 
-                # Resend previous ACK
+                # resend previous ACK
                 prev_ack_seq = 1 - self.seq_num
                 ack_segment = Layer4Segment(src_port=80, dst_port=5000, segment_type=1, seq_num=prev_ack_seq)
                 self.send_to_layer3(ack_segment, src_ip)
@@ -88,7 +85,7 @@ class Host:
             
         print(f"{self.name}: Layer 4: Checksum verified")
 
-        # 2. Handle incoming ACK (Sender Side)
+        # handle incoming ACK (sender side)
         if segment.type == 1: 
             print(f"{self.name}: Layer 4: ACK received: seq={segment.seq_num}")
             if segment.seq_num == self.seq_num:
@@ -96,22 +93,22 @@ class Host:
             else:
                 print(f"{self.name}: Layer 4: Incorrect ACK received, retransmitting...")
                 
-        # 3. Handle incoming DATA (Receiver Side)
+        # handle incoming DATA (receiver side)
         elif segment.type == 0: 
             if segment.seq_num == self.seq_num:
                 print(f"{self.name}: Layer 4: DATA segment delivered to Application Layer. Data size={len(segment.data)}")
-                # Advance receiver's expected sequence number
+                # advance receiver's expected sequence number
                 self.seq_num = 1 - self.seq_num 
             else:
-                # Duplicate segment detected (ACK was likely lost)
+                # duplicate segment detected (ACK was likely lost)
                 pass
 
-            # Always send an ACK for the sequence number we just received
+            # always send an ACK for the sequence number we just received
             ack_segment = Layer4Segment(src_port=80, dst_port=5000, segment_type=1, seq_num=segment.seq_num)
             print(f"{self.name}: Layer 4: Segment created by adding transport layer header (ACK, seq={segment.seq_num})")
             print(f"{self.name}: Layer 4: Segment sent to Network Layer")
             
-            # Send it down to Layer 3 to travel back to the sender
+            # send it down to layer 3 to travel back to the sender
             self.send_to_layer3(ack_segment, src_ip)
 
     def send_to_layer3(self, segment, dest_ip):
@@ -121,10 +118,7 @@ class Host:
         """
         self.receive_from_layer4(segment, dest_ip)
 
-    # ========================================================
     # LAYER 3 & LAYER 2 - NETWORK & LINK (Jules)
-    # ========================================================
-
     def receive_from_layer4(self, segment, dest_ip):
         src_ip = self.ip
         print(f"{self.name}: Layer 3: Segment received from Transport Layer: "

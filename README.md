@@ -2,7 +2,7 @@
 
 Authors: Damien Zhang (23669907) & Jules Van Melle-Park (23136223)
 
-## Overview
+# Overview
 This project is a logical Python simulation of a simplified three-tier network stack (Layers 2, 3, and 4). It demonstrates the encapsulation, routing, and reliable delivery of application data from Host A to Host B across a router (R1). 
 
 The codebase is structured into four main components:
@@ -11,7 +11,7 @@ The codebase is structured into four main components:
 * `protocol.py`: Defines the header structures and dynamically calculates segment sizes, TTLs, and checksums.
 * `config.py`: Stores the static network topology, including IP addresses, MAC addresses, and routing tables.
 
-## Execution Instructions
+# Execution Instructions
 This simulator requires Python 3 and uses only standard libraries. 
 
 To run the simulation, execute `main.py` via the command line and pass the desired application message size (in bytes) as a single integer argument.

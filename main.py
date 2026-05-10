@@ -10,9 +10,7 @@ def create_dummy_message(size):
     return "A" * size
 
 def main():
-    # 1. CLI Argument Parsing
-    # The implementation must accept the application message size (in bytes) 
-    # as a command-line argument.
+    # get message size from args/read command line input
     if len(sys.argv) != 2:
         print("Usage: python main.py <message_size_in_bytes>")
         sys.exit(1)
@@ -27,11 +25,10 @@ def main():
 
     print(f"--- Starting Simulation: {message_size}-byte payload from Host A to Host B ---")
 
-    # 2. Network Instantiation
+    # set up hosts and router
     host_a = Host("Host A", HOST_A_IP, HOST_A_MAC, ROUTING_TABLE_HOST_A, ARP_TABLE_HOST_A)
     host_b = Host("Host B", HOST_B_IP, HOST_B_MAC, ROUTING_TABLE_HOST_B, ARP_TABLE_HOST_B)
     
-    # Instantiate the router with the formatted names
     router_r1 = Router(
         interfaces_config={
             "Interface 1": {"ip": ROUTER_R1_IFACE1_IP, "mac": ROUTER_R1_IFACE1_MAC, "arp_table": ARP_TABLE_R1_IFACE1},
@@ -40,7 +37,7 @@ def main():
         routing_table=ROUTING_TABLE_R1
     )
 
-    # 3. The "Wire" 
+    # wire up the topology
     host_a.link = router_r1
     host_a.connected_interface = "Interface 1"  
 
@@ -50,7 +47,7 @@ def main():
     router_r1.interfaces["Interface 1"]["link"] = host_a
     router_r1.interfaces["Interface 2"]["link"] = host_b
 
-    # 4. The Trigger
+    # start transmission
     dummy_message = create_dummy_message(message_size)
     host_a.send_message(dummy_message, dest_ip=HOST_B_IP)
 
