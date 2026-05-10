@@ -1,6 +1,6 @@
 import hashlib
 
-# Protocol Constants as defined in the project brief
+# protocol constants as defined in the project brief
 L2_TYPE_IPV4 = 0x0800
 L3_PROTOCOL_UDP = 17
 L4_TYPE_DATA = 0
@@ -27,7 +27,7 @@ class Layer4Segment:
     def compute_checksum(self):
         segment_content = f"{self.src_port}{self.dst_port}{self.length}{self.type}{self.seq_num}{self.data}"
         hash_object = hashlib.md5(segment_content.encode('utf-8'))
-        # Return a simple integer hash representing a 2-byte checksum
+        # return a simple integer hash representing a 2-byte checksum
         return int(hash_object.hexdigest(), 16) % 65536 
 
     def verify_checksum(self):
@@ -49,14 +49,14 @@ class Layer3Packet:
     Responsible for logical addressing and TTL handling.
     """
     def __init__(self, src_ip, dst_ip, ttl, payload):
-        self.src_ip = src_ip          # 4 bytes
-        self.dst_ip = dst_ip          # 4 bytes
-        self.ttl = ttl                # 1 byte (Decremented at each router)
-        self.protocol = L3_PROTOCOL_UDP  # 1 byte (17 indicates UDP payload)
-        self.payload = payload        # variable (Layer 4 Segment)
+        self.src_ip = src_ip # 4 bytes
+        self.dst_ip = dst_ip # 4 bytes
+        self.ttl = ttl # 1 byte (decremented at each router)
+        self.protocol = L3_PROTOCOL_UDP # 1 byte (17 indicates UDP payload)
+        self.payload = payload # variable (layer 4 segment)
         
-        # Calculate Total Length: 12 bytes of header + payload length
-        # Ensure payload has a 'length' attribute (which Layer4Segment does)
+        # calculate total length: 12 bytes of header + payload length
+        # ensure payload has a 'length' attribute (which Layer4Segment does)
         payload_len = getattr(payload, 'length', 0)
         self.total_length = 12 + payload_len # 2 bytes
 
@@ -79,10 +79,10 @@ class Layer2Frame:
     Responsible for MAC addressing and local delivery.
     """
     def __init__(self, src_mac, dst_mac, payload):
-        self.src_mac = src_mac        # 6 bytes
-        self.dst_mac = dst_mac        # 6 bytes
-        self.type = L2_TYPE_IPV4      # 2 bytes (0x0800 indicates IPv4 payload)
-        self.payload = payload        # variable (Layer 3 Packet)
+        self.src_mac = src_mac # 6 bytes
+        self.dst_mac = dst_mac # 6 bytes
+        self.type = L2_TYPE_IPV4 # 2 bytes (0x0800 indicates IPv4 payload)
+        self.payload = payload # variable (Layer 3 Packet)
 
     def __str__(self):
         """String representation required for the output logs."""
