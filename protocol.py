@@ -7,10 +7,8 @@ L4_TYPE_DATA = 0
 L4_TYPE_ACK = 1
 
 class Layer4Segment:
-    """
-    Transport Layer (UDP-like Segment with ACK support - rdt2.2)
-    Responsible for port-based delivery, error detection (checksum), and segmentation logic.
-    """
+    # Transport Layer (UDP-like segment with ACK support, rdt2.2) 
+    # responsible for port-based delivery, error detection (checksum), and segmentation logic
     def __init__(self, src_port, dst_port, segment_type, seq_num, data=""):
         self.src_port = src_port
         self.dst_port = dst_port
@@ -44,10 +42,7 @@ class Layer4Segment:
 
 
 class Layer3Packet:
-    """
-    Network Layer (IP-like Packet)
-    Responsible for logical addressing and TTL handling.
-    """
+    # Network Layer (IP-like Packet) responsible for logical addressing and TTL handling
     def __init__(self, src_ip, dst_ip, ttl, payload):
         self.src_ip = src_ip # 4 bytes
         self.dst_ip = dst_ip # 4 bytes
@@ -71,10 +66,7 @@ class Layer3Packet:
 
 
 class Layer2Frame:
-    """
-    Data Link Layer (Ethernet-like Frame)
-    Responsible for MAC addressing and local delivery.
-    """
+    # Data Link Layer (Ethernet-like Frame) responsible for MAC addressing and local delivery
     def __init__(self, src_mac, dst_mac, payload):
         self.src_mac = src_mac # 6 bytes
         self.dst_mac = dst_mac # 6 bytes

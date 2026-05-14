@@ -3,10 +3,8 @@ from config import *
 from devices import Host, Router
 
 def create_dummy_message(size):
-    """
-    Creates a simple text payload of the exact requested byte size.
-    For simulation, we'll use a repeating character to easily verify size.
-    """
+    #Creates a simple text payload of the exact requested byte size
+    #for simulation, we'll use a repeating character to easily verify size
     return "A" * size
 
 def main():
